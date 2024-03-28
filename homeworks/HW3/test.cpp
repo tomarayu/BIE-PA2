@@ -182,31 +182,63 @@ class CPatchStr
     {
       if(src.mFirst == nullptr) return *this;
       Node* currentNode = mFirst;
+      Node* prevNode0 = nullptr;
       size_t currentIndex = 0;
-
+       std::cout<< this->toStr() << std::endl;
+       std::cout<< src.toStr() << std::endl;
     // Find the node at the given position
     while (currentNode != nullptr && currentIndex + currentNode->mPatch.mLength < pos) {
         currentIndex += currentNode->mPatch.mLength;
+        prevNode0  =currentNode;
         currentNode = currentNode->mNext;
     }
+    std::cout<<currentIndex<<std::endl;
     // If the position is out of bounds, return without doing anything
     if (currentNode == nullptr) {
         return *this;
     }
+        std::cout << "=============\n";
         // Create a new node for the source string
-    Node* srcNode = new Node(*src.mFirst);
+     Node* srcNode = new Node(*src.mFirst);
+     std::cout<< currentNode->mPatch.getData()<<std::endl;
+     size_t newInd = pos-currentIndex;
+     Patch prevPatch(currentNode->mPatch.data , newInd , 0);
+     Patch forwardPatch(currentNode->mPatch.data, currentNode->mPatch.mLength-newInd, newInd);
+         std::cout << "=============\n";
+     Node* prevNode = new Node(prevPatch, src.mFirst);
+     prevNode0->mNext = prevNode;
+    Node* tempCurr = src.mFirst;
+    while(tempCurr->mNext!=nullptr) {    std::cout << "=============\n";tempCurr= tempCurr->mNext;};
+    std::cout << "=============\n";
+    Node* forwardNode = new Node(forwardPatch, nullptr);
+    tempCurr->mNext = forwardNode;     
 
-    // Insert the source string at the given position
-    srcNode->mNext = currentNode->mNext;
-    currentNode->mNext = srcNode;
-
-    return *this;
+     std::cout << "prev patch is||" << prevPatch.getData() << "||thatt's it\n" << "newInd is " << newInd << " and currInd is " << currentIndex << "\n"; 
+    // Node *fornext = srcNode;
+    // while(fornext!=nullptr){
+    //   fornext = srcNode->mNext;
+    // }
+    
+   // Insert the source string at the given position
+  //  if(currentIndex==pos){
+  //   Node* fornext = currentNode->mNext;
+  //   std::cout << fornext->mPatch.getData()<< std::endl;
+  //   currentNode->mNext = src.mFirst;
+  //   std::cout << currentNode->mNext->mNext->mNext->mPatch.getData()<< std::endl;
+  //   Node *tempcurr = src.mFirst;
+  //   std::cout<< "===========in insert ==========\n";
+  //   while(tempcurr->mNext!=nullptr)tempcurr=tempcurr->mNext; 
+  //   tempcurr->mNext=fornext;
+    std::cout<< this->toStr() << std::endl;
+    std::cout << "retruning" << std::endl;
+     return *this;
 
     }
     CPatchStr & remove    ( size_t            from,
                             size_t            len );
     char      * toStr     () const{
       if(mFirst == nullptr) return nullptr;
+    
 
       //Calculate the total length of the concatenated string
       size_t totalLength = 0;
@@ -226,11 +258,14 @@ class CPatchStr
       currentNode = mFirst;
       while(currentNode!=nullptr){
         const char * currentStr = currentNode->mPatch.data->data();
+            //  std::cout<< "===========in tostr ==========\n";
+            //  std::cout<< currentNode->mPatch.getData()<<std::endl ;
         size_t currentSize = currentNode->mPatch.mLength;
         std::memcpy(result+currentPos, currentStr, currentSize);
         currentPos+=currentSize;
         currentNode = currentNode->mNext;
       }
+      
       }
       return result;
     }
@@ -289,7 +324,7 @@ int main ()
      std::cout<< "\nhereee======================\n";
    c . append ( c );
    assert ( stringMatch ( c . toStr (), "test datat datfoo text textest datat datfoo text tex" ) );
- //  std::cout<< " c is " << c.subStr(6,9).toStr() <<"\n================="<< std::endl;
+   std::cout<< " c is " << c.subStr(6,9).toStr() <<"\n================="<< std::endl;
    //assert(stringMatch(c.subStr(6,9).toStr(), "atat datf"));
    d . insert ( 2, c . subStr ( 6, 9 ) );
    std::cout << " D is" << d.toStr() << std::endl;
