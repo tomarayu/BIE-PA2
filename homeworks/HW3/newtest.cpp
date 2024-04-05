@@ -233,58 +233,7 @@ CPatchStr &CPatchStr::insert(size_t pos, const CPatchStr &src)
  *this = std::move(leftMost);
  //std::cout<< this->toStr() << std::endl;
  return *this;
-  // size_t currentOffset = 0;
-  // size_t totalSizeAllocated = 0;
-  // size_t newCapacity = mSize + src.mSize + 200;
-  // Patch *newPatches = new Patch[newCapacity];
-  // Patch splitPatch;
-  // size_t incPatch = 0;
 
-  // size_t i = 0;
-  // size_t currentPos = 0;
-  // while (currentPos < pos)
-  // {
-  //   if (mPatches[currentPos].mLength + currentOffset > pos)
-  //   {
-
-  //     size_t patchOffset = 0;
-  //     size_t patchLen = pos - totalSizeAllocated;
-  //     Patch patch(mPatches[currentPos].data, patchLen, patchOffset);
-  //     splitPatch = Patch(mPatches[currentPos].data, mPatches[currentPos].mLength - patchLen, patchLen);
-  //     newPatches[i++] = patch;
-  //     currentPos++;
-  //     currentOffset += patchLen;
-  //     totalSizeAllocated += patchLen;
-  //     incPatch++;
-  //     break;
-  //   }
-  //   else
-  //   {
-  //     newPatches[i++] = mPatches[currentPos++];
-  //     totalSizeAllocated += newPatches[i - 1].mLength;
-  //   }
-  // }
-  // for (size_t j = 0; j < src.mSize; j++)
-  // {
-  //   newPatches[i++] = src.mPatches[j];
-  // }
-  // newPatches[i++] = splitPatch;
-  // while (currentPos < mSize)
-  // {
-  //   if (i > newCapacity)
-  //   {
-
-  //   };
-  //   newPatches[i++] = mPatches[currentPos];
-  //   currentPos += 1;
-  // }
-
-  // delete[] mPatches;
-
-  // mPatches = newPatches;
-  // mSize = newCapacity;
-  // mCapacity = newCapacity;
-  // return *this;
 }
 
 CPatchStr &CPatchStr::remove(size_t pos, size_t len)
@@ -296,14 +245,10 @@ CPatchStr &CPatchStr::remove(size_t pos, size_t len)
   }
   
 
- // Patch *newPatch = new Patch[mCapacity];
- // std::cout << " 0+pos-1 is " << pos << " size is " << this->size() << std::endl;
   CPatchStr leftPart = this->subStr(0,pos);
- // std::cout<<" lef tpart is " << leftPart.toStr() <<"   hererere\n" ;
- // std::cout << " right part is " << pos+len -1 << std::endl;
+
   CPatchStr rightPart = this->subStr(pos+len, this->size()-(pos+len));
   leftPart.append(rightPart);
-  //std::cout<< leftPart.toStr() << std::endl;
   *this = std::move(leftPart);
 
   return *this;
