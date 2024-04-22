@@ -48,7 +48,6 @@ private:
   char *mData = nullptr;
   size_t mSize = 0;
   size_t mCapacity = 0;
-  size_t refCount = 1;
 };
 
 CString::CString(const char *str)
