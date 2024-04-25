@@ -16,8 +16,10 @@
 class Component
 {
 public:
- virtual ~Component() {} // Add a virtual destructor to the base class
+  virtual ~Component() {} // Add a virtual destructor to the base class
   virtual std::unique_ptr<Component> clone() const = 0;
+  virtual std::string toStringInside() const = 0;
+  virtual std::string toStringLast() const = 0;
   virtual std::string toString() const = 0;
 };
 
@@ -26,7 +28,7 @@ class CComputer
 public:
   std::string name;
   std::vector<std::unique_ptr<Component>> components;
-  std::string address;
+  std::vector<std::string> address; // there can be multiple addresses
 
   std::unique_ptr<CComputer> clone() const
   {
@@ -49,21 +51,67 @@ public:
   }
   CComputer &addAddress(const std::string &address)
   {
-    this->address = address;
+    this->address.push_back(address);
     return *this;
   }
   std::string getName() const
   {
     return name;
   }
+
   std::string toString() const
   {
     std::ostringstream oss;
     oss << "Host: " << name << std::endl;
-    oss << "| +-" << address << std::endl;
+    for (const auto &addr : address)
+    {
+      oss << "+-" << addr << std::endl;
+    }
     for (size_t i = 0; i < components.size(); i++)
     {
-      oss << "| " << (i == components.size() - 1 ? "\\\\-" : " +-") << components[i]->toString();
+      oss << (i == components.size() - 1 ? "\\-" : "+-") << components[i]->toStringInside();
+    }
+    return oss.str();
+  }
+
+  std::string toStringLast() const
+  {
+
+    std::ostringstream oss;
+    // oss<< "hreeee\n";
+    oss << "Host: " << name << std::endl;
+    for (const auto &addr : address)
+    {
+      oss << "  +-" << addr << std::endl;
+    }
+    for (size_t i = 0; i < components.size(); i++)
+    {
+      oss << " " << (i == components.size() - 1 ? " \\-" : " +-") << components[i]->toStringInside();
+    }
+    return oss.str();
+  }
+  std::string toStringInside() const
+  {
+
+    std::ostringstream oss;
+    oss << "Host: " << name << std::endl;
+    for (const auto &addr : address)
+    {
+      oss << "| +-" << addr << std::endl;
+    }
+
+    for (size_t i = 0; i < components.size(); i++)
+    {
+      if (i == components.size() - 1)
+      {
+        // oss << "here in the lastcomp:))";
+        oss << "| \\-" << components[i]->toStringLast();
+      }
+      else
+      {
+        oss << "|"
+            << " +-" << components[i]->toStringInside();
+      }
     }
     return oss.str();
   }
@@ -98,22 +146,40 @@ public:
     }
     return nullptr;
   }
+  CNetwork(const CNetwork &other)
+  {
+    name = other.name;
+    // For each computer in the other network, clone it and add it to this network
+    for (const auto &computer : other.computers)
+    {
+      computers.push_back(computer->clone());
+    }
+  }
+  CNetwork &operator=(CNetwork &&other) noexcept
+  {
+    if (this != &other)
+    {
+      name = std::move(other.name);
+      computers = std::move(other.computers);
+    }
+    return *this;
+  }
 
   std::string toString() const
   {
     std::ostringstream oss;
     oss << "Network: " << name << std::endl;
-    //    for (size_t i = 0; i < computers.size(); ++i)
-    // {
-    //   oss << "\n" << (i == computers.size() - 1 ? "\\\\-" : "+-")  << computers[i]->toString();
-    // }
     for (size_t i = 0; i < computers.size(); ++i)
     {
-      oss << (i == computers.size() - 1 ? "\\\\-" : "+-") << computers[i]->toString() << std::endl;
-      // for (size_t j = 0; j < computers[i]->components.size(); ++j)
-      // {
-      //   oss << "| " << (j == computers[i]->components.size() - 1 ? "\\-" : "+-") << computers[i]->components[j]->toString();
-      // }
+      if (i == computers.size() - 1)
+      {
+        // printf("here in the lastcomp:))");
+        oss << "\\-" << computers[i]->toStringLast();
+      }
+      else
+      {
+        oss << (i == computers.size() - 1 ? "\\-" : "+-") << computers[i]->toStringInside();
+      }
     }
     return oss.str();
   }
@@ -140,6 +206,14 @@ public:
   {
     return "CPU, " + std::to_string(cores) + " cores @ " + std::to_string(frequency) + "MHz" + "\n";
   }
+  std::string toStringLast() const override
+  {
+    return "CPU, " + std::to_string(cores) + " cores @ " + std::to_string(frequency) + "MHz" + "\n";
+  }
+  std::string toStringInside() const override
+  {
+    return "CPU, " + std::to_string(cores) + " cores @ " + std::to_string(frequency) + "MHz" + "\n";
+  }
 };
 class CMemory : public Component
 {
@@ -153,6 +227,16 @@ public:
     return std::make_unique<CMemory>(*this);
   }
   std::string toString() const override
+  {
+    return "Memory, " + std::to_string(memory) + " MiB" + "\n";
+  }
+  std::string toStringLast() const override
+  {
+    std::ostringstream oss;
+    oss << "Memory, " + std::to_string(memory) + " MiB" << std::endl;
+    return oss.str();
+  }
+  std::string toStringInside() const override
   {
     std::ostringstream oss;
     oss << "Memory, " + std::to_string(memory) + " MiB" << std::endl;
@@ -182,21 +266,42 @@ public:
       : type(other.type), size(other.size), partitions(other.partitions) {}
   CDisk &addPartition(int partitionSize, const std::string &partitionName)
   {
+    std::cout<< "added a partition in \n";  
     partitions.push_back({partitionSize, partitionName});
     return *this;
   }
-
   std::string toString() const override
   {
     std::ostringstream oss;
     oss << (type == MAGNETIC ? "HDD" : "SSD") << ", " << size << " GiB" << std::endl;
     for (size_t i = 0; i < partitions.size(); i++)
     {
-      oss /*<< "\n"*/ << (i == partitions.size() - 1 ? "| | \\\\-" : "| | +-") << "[" << i << "]: " << partitions[i].first << " GiB, " << partitions[i].second << std::endl;
+      oss << (i == partitions.size() - 1 ? "  \\-" : "  +-") << "[" << i << "]: " << partitions[i].first << " GiB, " << partitions[i].second << std::endl;
     }
-    // {
-    //   oss << "\n    Partition: " << partition.second << ", " << partition.first << " GiB";
-    // }
+  }
+
+  std::string toStringLast() const override
+  {
+    std::ostringstream oss;
+    oss << (type == MAGNETIC ? "HDD" : "SSD") << ", " << size << " GiB" << std::endl;
+    for (size_t i = 0; i < partitions.size(); i++)
+    {
+      oss /*<< "\n"*/ << (i == partitions.size() - 1 ? "|   \\-" : "|   +-") << "[" << i << "]: " << partitions[i].first << " GiB, " << partitions[i].second << std::endl;
+    }
+
+    return oss.str();
+  }
+
+  std::string toStringInside() const override
+  {
+    std::ostringstream oss;
+
+    oss << (type == MAGNETIC ? "HDD" : "SSD") << ", " << size << " GiB" << std::endl;
+    for (size_t i = 0; i < partitions.size(); i++)
+    {
+      oss /*<< "\n"*/ << (i == partitions.size() - 1 ? "| | \\-" : "| | +-") << "[" << i << "]: " << partitions[i].first << " GiB, " << partitions[i].second << std::endl;
+    }
+
     return oss.str();
   }
 };
@@ -248,74 +353,73 @@ int main()
          "  +-2001:718:2:2901::238\n"
          "  +-CPU, 4 cores @ 2500MHz\n"
          "  \\-Memory, 8000 MiB\n");
-  // CNetwork x = n;
-  // auto c = x . findComputer ( "imap.fit.cvut.cz" );
-  // assert ( toString ( *c ) ==
-  //   "Host: imap.fit.cvut.cz\n"
-  //   "+-147.32.232.238\n"
-  //   "+-2001:718:2:2901::238\n"
-  //   "+-CPU, 4 cores @ 2500MHz\n"
-  //   "\\-Memory, 8000 MiB\n" );
-  // c -> addComponent ( CDisk ( CDisk::MAGNETIC, 1000 ) .
-  //        addPartition ( 100, "system" ) .
-  //        addPartition ( 200, "WWW" ) .
-  //        addPartition ( 700, "mail" ) );
-  // assert ( toString ( x ) ==
-  //   "Network: FIT network\n"
-  //   "+-Host: progtest.fit.cvut.cz\n"
-  //   "| +-147.32.232.142\n"
-  //   "| +-CPU, 8 cores @ 2400MHz\n"
-  //   "| +-CPU, 8 cores @ 1200MHz\n"
-  //   "| +-HDD, 1500 GiB\n"
-  //   "| | +-[0]: 50 GiB, /\n"
-  //   "| | +-[1]: 5 GiB, /boot\n"
-  //   "| | \\-[2]: 1000 GiB, /var\n"
-  //   "| +-SSD, 60 GiB\n"
-  //   "| | \\-[0]: 60 GiB, /data\n"
-  //   "| +-Memory, 2000 MiB\n"
-  //   "| \\-Memory, 2000 MiB\n"
-  //   "+-Host: courses.fit.cvut.cz\n"
-  //   "| +-147.32.232.213\n"
-  //   "| +-CPU, 4 cores @ 1600MHz\n"
-  //   "| +-Memory, 4000 MiB\n"
-  //   "| \\-HDD, 2000 GiB\n"
-  //   "|   +-[0]: 100 GiB, /\n"
-  //   "|   \\-[1]: 1900 GiB, /data\n"
-  //   "\\-Host: imap.fit.cvut.cz\n"
-  //   "  +-147.32.232.238\n"
-  //   "  +-2001:718:2:2901::238\n"
-  //   "  +-CPU, 4 cores @ 2500MHz\n"
-  //   "  +-Memory, 8000 MiB\n"
-  //   "  \\-HDD, 1000 GiB\n"
-  //   "    +-[0]: 100 GiB, system\n"
-  //   "    +-[1]: 200 GiB, WWW\n"
-  //   "    \\-[2]: 700 GiB, mail\n" );
-  // assert ( toString ( n ) ==
-  //   "Network: FIT network\n"
-  //   "+-Host: progtest.fit.cvut.cz\n"
-  //   "| +-147.32.232.142\n"
-  //   "| +-CPU, 8 cores @ 2400MHz\n"
-  //   "| +-CPU, 8 cores @ 1200MHz\n"
-  //   "| +-HDD, 1500 GiB\n"
-  //   "| | +-[0]: 50 GiB, /\n"
-  //   "| | +-[1]: 5 GiB, /boot\n"
-  //   "| | \\-[2]: 1000 GiB, /var\n"
-  //   "| +-SSD, 60 GiB\n"
-  //   "| | \\-[0]: 60 GiB, /data\n"
-  //   "| +-Memory, 2000 MiB\n"
-  //   "| \\-Memory, 2000 MiB\n"
-  //   "+-Host: courses.fit.cvut.cz\n"
-  //   "| +-147.32.232.213\n"
-  //   "| +-CPU, 4 cores @ 1600MHz\n"
-  //   "| +-Memory, 4000 MiB\n"
-  //   "| \\-HDD, 2000 GiB\n"
-  //   "|   +-[0]: 100 GiB, /\n"
-  //   "|   \\-[1]: 1900 GiB, /data\n"
-  //   "\\-Host: imap.fit.cvut.cz\n"
-  //   "  +-147.32.232.238\n"
-  //   "  +-2001:718:2:2901::238\n"
-  //   "  +-CPU, 4 cores @ 2500MHz\n"
-  //   "  \\-Memory, 8000 MiB\n" );
+  CNetwork x = n;
+  auto c = x.findComputer("imap.fit.cvut.cz");
+  std::cout << c->toString() << std::endl;
+  assert(toString(*c) ==
+         "Host: imap.fit.cvut.cz\n"
+         "+-147.32.232.238\n"
+         "+-2001:718:2:2901::238\n"
+         "+-CPU, 4 cores @ 2500MHz\n"
+         "\\-Memory, 8000 MiB\n");
+  c->addComponent(CDisk(CDisk::MAGNETIC, 1000).addPartition(100, "system").addPartition(200, "WWW").addPartition(700, "mail"));
+  std::cout << x.toString() << std::endl;
+  assert(toString(x) ==
+         "Network: FIT network\n"
+         "+-Host: progtest.fit.cvut.cz\n"
+         "| +-147.32.232.142\n"
+         "| +-CPU, 8 cores @ 2400MHz\n"
+         "| +-CPU, 8 cores @ 1200MHz\n"
+         "| +-HDD, 1500 GiB\n"
+         "| | +-[0]: 50 GiB, /\n"
+         "| | +-[1]: 5 GiB, /boot\n"
+         "| | \\-[2]: 1000 GiB, /var\n"
+         "| +-SSD, 60 GiB\n"
+         "| | \\-[0]: 60 GiB, /data\n"
+         "| +-Memory, 2000 MiB\n"
+         "| \\-Memory, 2000 MiB\n"
+         "+-Host: courses.fit.cvut.cz\n"
+         "| +-147.32.232.213\n"
+         "| +-CPU, 4 cores @ 1600MHz\n"
+         "| +-Memory, 4000 MiB\n"
+         "| \\-HDD, 2000 GiB\n"
+         "|   +-[0]: 100 GiB, /\n"
+         "|   \\-[1]: 1900 GiB, /data\n"
+         "\\-Host: imap.fit.cvut.cz\n"
+         "  +-147.32.232.238\n"
+         "  +-2001:718:2:2901::238\n"
+         "  +-CPU, 4 cores @ 2500MHz\n"
+         "  +-Memory, 8000 MiB\n"
+         "  \\-HDD, 1000 GiB\n"
+         "    +-[0]: 100 GiB, system\n"
+         "    +-[1]: 200 GiB, WWW\n"
+         "    \\-[2]: 700 GiB, mail\n");
+  assert(toString(n) ==
+         "Network: FIT network\n"
+         "+-Host: progtest.fit.cvut.cz\n"
+         "| +-147.32.232.142\n"
+         "| +-CPU, 8 cores @ 2400MHz\n"
+         "| +-CPU, 8 cores @ 1200MHz\n"
+         "| +-HDD, 1500 GiB\n"
+         "| | +-[0]: 50 GiB, /\n"
+         "| | +-[1]: 5 GiB, /boot\n"
+         "| | \\-[2]: 1000 GiB, /var\n"
+         "| +-SSD, 60 GiB\n"
+         "| | \\-[0]: 60 GiB, /data\n"
+         "| +-Memory, 2000 MiB\n"
+         "| \\-Memory, 2000 MiB\n"
+         "+-Host: courses.fit.cvut.cz\n"
+         "| +-147.32.232.213\n"
+         "| +-CPU, 4 cores @ 1600MHz\n"
+         "| +-Memory, 4000 MiB\n"
+         "| \\-HDD, 2000 GiB\n"
+         "|   +-[0]: 100 GiB, /\n"
+         "|   \\-[1]: 1900 GiB, /data\n"
+         "\\-Host: imap.fit.cvut.cz\n"
+         "  +-147.32.232.238\n"
+         "  +-2001:718:2:2901::238\n"
+         "  +-CPU, 4 cores @ 2500MHz\n"
+         "  \\-Memory, 8000 MiB\n");
   return EXIT_SUCCESS;
 }
 #endif /* __PROGTEST__ */
