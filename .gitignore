@@ -1,0 +1,15 @@
+# Compiled files
+*.o
+*.out
+*.a
+*.so
+
+# Editor configuration
+.vscode/
+.idea/
+
+# Videos
+videos/
+
+# Other
+*~

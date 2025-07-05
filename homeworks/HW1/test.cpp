@@ -63,10 +63,10 @@ public:
     // std::transform(aOwnerLower.begin(), aOwnerLower.end(), aOwnerLower.begin(), ::tolower);
     // std::transform(bOwnerLower.begin(), bOwnerLower.end(), bOwnerLower.begin(), ::tolower);
     int comparison = strcasecmp(a.mOwner.c_str(), b.mOwner.c_str());
-    if (!comparison)
-      return compareByAddr(a,b);
+    if (comparison)
+      return comparison<0;
 
-    return comparison < 0;
+    return compareByAddr(a,b);
   }
   // static bool compareByOwnerUp(const LAND &a, const LAND &b)
   // {
@@ -193,7 +193,7 @@ public:
     other.mAddr = addr;
     // auto it = std::find(landByAddr.begin(), landByAddr.end(), other);
     auto it = std::lower_bound(landByAddr.begin(), landByAddr.end(), other, LAND::compareByAddr);
-    if (it != landByAddr.end() && (!strcmp(it->mCity.c_str(),other.mCity.c_str()) && !strcmp(it->mAddr.c_str() , other.mAddr.c_str())))
+    if (it != landByAddr.end() && (it->mCity == other.mCity && it->mAddr == other.mAddr))
     {
       if (!count)
       {
@@ -216,7 +216,7 @@ public:
     other.mRegion = region;
 
     auto it = std::lower_bound(landByRegion.begin(), landByRegion.end(), other, LAND::compareByRegId);
-    if (it != landByRegion.end() && (!strcmp(it->mRegion.c_str(),other.mRegion.c_str()) && it->mId == other.mId))
+    if (it != landByRegion.end() && (it->mRegion == other.mRegion && it->mId == other.mId))
     {
       if (!count)
       {
@@ -241,7 +241,7 @@ public:
     landtofind.mAddr = addr;
     auto it = std::lower_bound(landByAddr.begin(), landByAddr.end(), landtofind, LAND::compareByAddr);
     ////std::cout<< it->mCity << " , " << it->mAddr << std::endl;
-    if (it != landByAddr.end() && (!strcmp(it->mCity.c_str(),landtofind.mCity.c_str()) && !strcmp(it->mAddr.c_str() , landtofind.mAddr.c_str())))
+    if (it != landByAddr.end() && (it->mCity == landtofind.mCity && it->mAddr == landtofind.mAddr))
     {
       owner = it->mOwner;
       return true;
@@ -257,7 +257,7 @@ public:
     landtofind.mId = id;
     auto it = std::lower_bound(landByRegion.begin(), landByRegion.end(), landtofind, LAND::compareByRegId);
     ////std::cout << it-> mCityAddr <<  " , " << it -> mRegId <<  std::endl;
-    if (it != landByRegion.end() && (!strcmp(it->mRegion.c_str(), landtofind.mRegion.c_str()) && it->mId == landtofind.mId))
+    if (it != landByRegion.end() && (it->mRegion == landtofind.mRegion && it->mId == landtofind.mId))
     {
       owner = it->mOwner;
       return true;
@@ -273,7 +273,7 @@ public:
 
     auto it = std::lower_bound(landByAddr.begin(), landByAddr.end(), landtofind, LAND::compareByAddr);
     ////std::cout << it-> mCityAddr << std::endl;
-    if (it != landByAddr.end() && (!strcmp(it->mCity.c_str(),landtofind.mCity.c_str()) && !strcmp(it->mAddr.c_str() , landtofind.mAddr.c_str())) && (strcasecmp(it->mOwner.c_str(), owner.c_str())))
+    if (it != landByAddr.end() && (it->mCity == landtofind.mCity && it->mAddr == landtofind.mAddr) && (strcasecmp(it->mOwner.c_str(), owner.c_str())))
     {
       if (!count)
       {
@@ -308,7 +308,7 @@ public:
     landtofind.mId = id;
     auto it = std::lower_bound(landByRegion.begin(), landByRegion.end(), landtofind, LAND::compareByRegId);
     ////std::cout << it-> mCityAddr <<  " , " << it -> mRegId <<  std::endl;
-    if (it != landByRegion.end() && (!strcmp(it->mRegion.c_str(), landtofind.mRegion.c_str())&& it->mId == landtofind.mId) && (strcasecmp(it->mOwner.c_str(), owner.c_str())))
+    if (it != landByRegion.end() && (it->mRegion == landtofind.mRegion && it->mId == landtofind.mId) && (strcasecmp(it->mOwner.c_str(), owner.c_str())))
     {
 
       // it->timestamp = std::chrono::system_clock::now();
@@ -335,33 +335,26 @@ public:
   size_t count(const std::string &owner) const
   {
 
-    LAND otherStart, otherEnd;
-    otherStart.mOwner = owner;
-    otherEnd.mOwner = owner;
-    otherStart.mAddr = "";
-    otherEnd.mAddr = "ZZZZZZZZZZZZZZZZZZZZZ";
-    this->print();
-    auto itBegin = std::lower_bound(landByOwner.begin(), landByOwner.end(), otherStart, LAND::compareByOwner);
-    auto itEnd = std::lower_bound(landByOwner.begin(), landByOwner.end(), otherEnd, LAND::compareByOwner);
-    std::cout << itBegin->mAddr << std::endl;
-    std::cout << itEnd->mAddr << std::endl;
+    LAND other;
+    other.mOwner = owner;
 
-    std::cout << "non empty: " << std::distance(itBegin, itEnd) << std::endl;
+    auto range = std::equal_range(landByOwner.begin(), landByOwner.end(), other, [](const LAND &a, const LAND &b)
+                                  { return strcasecmp(a.mOwner.c_str(), b.mOwner.c_str()) < 0; });
 
-    return std::distance(itBegin, itEnd);
+    return std::distance(range.first, range.second);
     //  return count;
   };
 
-  void print() const {
-    ////std::cout << "sizes are ->  " <<landByRegion.size() << "   &   " << landByAddr.size()<<std::endl;
-    for(auto it : landByAddr){
-      //std::cout<< "city is " << it.mCity <<" , addr is " << it.mAddr << it.mOwner <<std::endl;
-    }
-    //std::cout<< "------->\n" << std::endl;
-        for(auto it : landByOwner){
-      std::cout<< "city is " << it.mOwner <<" , addr is " << it.mAddr << std::endl;
-    }
-  }
+  // void print(){
+  //   ////std::cout << "sizes are ->  " <<landByRegion.size() << "   &   " << landByAddr.size()<<std::endl;
+  //   for(auto it : landByAddr){
+  //     //std::cout<< "city is " << it.mCity <<" , addr is " << it.mAddr << it.mOwner <<std::endl;
+  //   }
+  //   //std::cout<< "------->\n" << std::endl;
+  //       for(auto it : landByRegion){
+  //     //std::cout<< "city is " << it.mOwner <<" , addr is " << it.mRegId << std::endl;
+  //   }
+  // }
 
   CIterator listByAddr() const
   {
@@ -403,7 +396,7 @@ private:
   std::vector<LAND> landByOwner;
   std::vector<LAND> landByRegion;
   // std::vector<LAND>lands;
-   inline static std::vector<LAND> matchingRecords;
+  inline static std::vector<LAND> matchingRecords;
   // static std::vector<std::string>owners;
 };
 // std::vector<std::string> CLandRegister::owners;
@@ -421,7 +414,6 @@ static void test0()
   // assert(x.add("    ", "aa", "Prague", 4552));
   //  assert(x.add("aa", "    ", "Librece", 4552));
   // x.print();
-  std::cout << "Hello we gonna exec" << std::endl;
   assert(x.count("") == 5);
   CIterator i0 = x.listByAddr();
   assert(!i0.atEnd() && i0.city() == "Liberec" && i0.addr() == "Evropska" && i0.region() == "Librec" && i0.id() == 4552 && i0.owner() == "");
